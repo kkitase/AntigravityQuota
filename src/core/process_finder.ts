@@ -7,6 +7,7 @@ import {promisify} from 'util';
 import * as https from 'https';
 import {WindowsStrategy, UnixStrategy, platform_strategy} from './platform_strategies';
 import * as process from 'process';
+import * as vscode from 'vscode';
 
 const exec_async = promisify(exec);
 
@@ -26,7 +27,7 @@ export class ProcessFinder {
 			this.process_name = 'language_server_windows_x64.exe';
 		} else if (process.platform === 'darwin') {
 			this.strategy = new UnixStrategy('darwin');
-			this.process_name = 'language_server_macos';
+			this.process_name = `language_server_macos${process.arch === 'arm64' ? '_arm' : ''}`;
 		} else {
 			this.strategy = new UnixStrategy('linux');
 			this.process_name = 'language_server_linux';

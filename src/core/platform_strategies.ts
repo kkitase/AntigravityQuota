@@ -1,4 +1,3 @@
-import * as os from 'os';
 
 export interface platform_strategy {
 	get_process_list_command(process_name: string): string;
@@ -25,11 +24,9 @@ export class WindowsStrategy implements platform_strategy {
 	 */
 	private is_antigravity_process(command_line: string): boolean {
 		const lower_cmd = command_line.toLowerCase();
-		// Check for --app_data_dir antigravity parameter
 		if (/--app_data_dir\s+antigravity\b/i.test(command_line)) {
 			return true;
 		}
-		// Check if path contains antigravity
 		if (lower_cmd.includes('\\antigravity\\') || lower_cmd.includes('/antigravity/')) {
 			return true;
 		}
@@ -38,24 +35,20 @@ export class WindowsStrategy implements platform_strategy {
 
 	get_process_list_command(process_name: string): string {
 		if (this.use_powershell) {
-			// Use exact name matching instead of LIKE
 			return `powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \\"name='${process_name}'\\" | Select-Object ProcessId,CommandLine | ConvertTo-Json"`;
 		}
 		return `wmic process where "name='${process_name}'" get ProcessId,CommandLine /format:list`;
 	}
 
 	parse_process_info(stdout: string): {pid: number; extension_port: number; csrf_token: string} | null {
-		// Try parsing PowerShell JSON output
 		if (this.use_powershell || stdout.trim().startsWith('{') || stdout.trim().startsWith('[')) {
 			try {
 				let data = JSON.parse(stdout.trim());
-				// If array, filter for Antigravity processes
 				if (Array.isArray(data)) {
 					if (data.length === 0) {
 						return null;
 					}
 					const total_count = data.length;
-					// Filter for Antigravity processes
 					const antigravity_processes = data.filter((item: any) => item.CommandLine && this.is_antigravity_process(item.CommandLine));
 					console.log(`[WindowsStrategy] Found ${total_count} language_server process(es), ${antigravity_processes.length} belong to Antigravity`);
 					if (antigravity_processes.length === 0) {
@@ -67,7 +60,6 @@ export class WindowsStrategy implements platform_strategy {
 					}
 					data = antigravity_processes[0];
 				} else {
-					// Single object - also check if it's an Antigravity process
 					if (!data.CommandLine || !this.is_antigravity_process(data.CommandLine)) {
 						console.log('[WindowsStrategy] Single process found but not Antigravity, skipping');
 						return null;
@@ -94,13 +86,8 @@ export class WindowsStrategy implements platform_strategy {
 
 				return {pid, extension_port, csrf_token};
 			} catch (e) {
-				// JSON parse failed, try WMIC format
 			}
 		}
-
-		// Parse WMIC output format
-		// WMIC outputs multiple process blocks, each with CommandLine= and ProcessId= lines
-		// Need to group by process to avoid mixing parameters from different processes
 		const blocks = stdout.split(/\n\s*\n/).filter(block => block.trim().length > 0);
 
 		const candidates: Array<{pid: number; extension_port: number; csrf_token: string}> = [];
@@ -115,7 +102,6 @@ export class WindowsStrategy implements platform_strategy {
 
 			const command_line = command_line_match[1].trim();
 
-			// Check if it's an Antigravity process
 			if (!this.is_antigravity_process(command_line)) {
 				continue;
 			}
@@ -148,9 +134,6 @@ export class WindowsStrategy implements platform_strategy {
 	}
 
 	parse_listening_ports(stdout: string): number[] {
-		// Match IPv4: 127.0.0.1:port, 0.0.0.0:port
-		// Match IPv6: [::1]:port, [::]:port
-		// Foreign address can be: 0.0.0.0:0, *:*, [::]:0, etc.
 		const port_regex = /(?:127\.0\.0\.1|0\.0\.0\.0|\[::1?\]):(\d+)\s+\S+\s+LISTENING/gi;
 		const ports: number[] = [];
 		let match;
@@ -189,7 +172,7 @@ export class UnixStrategy implements platform_strategy {
 	}
 
 	get_process_list_command(process_name: string): string {
-		return `pgrep -fl "${process_name}"`;
+		return `pgrep -fl ${process_name}`;
 	}
 
 	parse_process_info(stdout: string): {pid: number; extension_port: number; csrf_token: string} | null {
@@ -200,8 +183,8 @@ export class UnixStrategy implements platform_strategy {
 				const pid = parseInt(parts[0], 10);
 				const cmd = line.substring(parts[0].length).trim();
 
-				const port_match = cmd.match(/--extension_server_port=(\d+)/);
-				const token_match = cmd.match(/--csrf_token=([a-zA-Z0-9\-]+)/);
+				const port_match = cmd.match(/--extension_server_port[=\s]+(\d+)/);
+				const token_match = cmd.match(/--csrf_token[=\s]+([a-zA-Z0-9\-]+)/);
 
 				return {
 					pid,
@@ -217,27 +200,43 @@ export class UnixStrategy implements platform_strategy {
 		if (this.platform === 'darwin') {
 			return `lsof -iTCP -sTCP:LISTEN -n -P -p ${pid}`;
 		}
-		return `ls -l /proc/${pid}/fd`; // Linux approximation, simpler to just use lsof often, but user environment might var.
-		// The original code used lsof for mac and 'ss' or 'netstat' for linux?
-		// Re-reading original unixProcessDetector... it used `lsof` for Mac and `ls -l /proc/PID/fd` + `netstat` logic for Linux is complex.
-		// Let's assume `lsof` or `netstat` is available.
-		// Actually, original code for Linux used `netstat -tlpn | grep pid`?
-		// Let's use `lsof` if available, or `netstat`.
-		// To match the "rewrite" I'll keep it simple: `lsof` is best for Mac. Linux often has `ss`.
-		// Let's use `lsof` for Mac, `ss` for Linux.
+		return `ss -tlnp 2>/dev/null | grep "pid=${pid}" || lsof -iTCP -sTCP:LISTEN -n -P -p ${pid} 2>/dev/null`;
 	}
 
-	// Actually, let's look at what I found in `unixProcessDetector`:
-	// It handled MacOS with `lsof`.
-	// It handled Linux with `ss -lptn 'sport = :*'` or `netstat`.
-
-	// I will implement a simplified version for Linux using `ss`
-
 	parse_listening_ports(stdout: string): number[] {
-		// Logic depends on command.
-		// Simplified: return empty if not implemented perfectly, focus on Windows as user seems to be on Windows.
-		// The user IS on Windows (OS: windows). I can prioritize Windows.
-		return [];
+		const ports: number[] = [];
+
+		if (this.platform === 'darwin') {
+			const lsof_regex = /(?:TCP|UDP)\s+(?:\*|[\d.]+|\[[\da-f:]+\]):(\d+)\s+\(LISTEN\)/gi;
+			let match;
+			while ((match = lsof_regex.exec(stdout)) !== null) {
+				const port = parseInt(match[1], 10);
+				if (!ports.includes(port)) {
+					ports.push(port);
+				}
+			}
+		} else {
+			const ss_regex = /LISTEN\s+\d+\s+\d+\s+(?:\*|[\d.]+|\[[\da-f:]*\]):(\d+)/gi;
+			let match;
+			while ((match = ss_regex.exec(stdout)) !== null) {
+				const port = parseInt(match[1], 10);
+				if (!ports.includes(port)) {
+					ports.push(port);
+				}
+			}
+
+			if (ports.length === 0) {
+				const lsof_regex = /(?:TCP|UDP)\s+(?:\*|[\d.]+|\[[\da-f:]+\]):(\d+)\s+\(LISTEN\)/gi;
+				while ((match = lsof_regex.exec(stdout)) !== null) {
+					const port = parseInt(match[1], 10);
+					if (!ports.includes(port)) {
+						ports.push(port);
+					}
+				}
+			}
+		}
+
+		return ports.sort((a, b) => a - b);
 	}
 
 	get_error_messages() {
