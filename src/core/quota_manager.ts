@@ -163,29 +163,15 @@ export class QuotaManager {
 
 	private format_time(ms: number, reset_time: Date): string {
 		if (ms <= 0) return localization.t('ready');
-		const mins = Math.ceil(ms / 60000);
-		let duration = '';
-		if (mins < 60) {
-			duration = `${mins}${localization.t('minutes')}`;
+
+		const total_mins = Math.ceil(ms / 60000);
+		const hours = Math.floor(total_mins / 60);
+		const mins = total_mins % 60;
+
+		if (hours > 0) {
+			return `${hours}h ${mins.toString().padStart(2, '0')}m`;
 		} else {
-			const hours = Math.floor(mins / 60);
-			duration = `${hours}${localization.t('hours')} ${mins % 60}${localization.t('minutes')}`;
+			return `${mins}m`;
 		}
-
-		const lang = localization.get_language();
-		const date_option = lang === 'ja' ? 'ja-JP' : 'en-US';
-
-		const date_str = reset_time.toLocaleDateString(date_option, {
-			day: '2-digit',
-			month: '2-digit',
-			year: 'numeric',
-		});
-		const time_str = reset_time.toLocaleTimeString(date_option, {
-			hour: '2-digit',
-			minute: '2-digit',
-			hour12: false,
-		});
-
-		return `${duration} (${date_str} ${time_str})`;
 	}
 }
