@@ -25,10 +25,12 @@ A lightweight VS Code extension that monitors your Antigravity AI model usage qu
 - **Automatic detection** – Finds Antigravity's language server process, port, and auth token without manual setup
 - **Background polling** – Periodically fetches quota data to keep the status bar up-to-date
 - **Multi-model support** – Tracks quota usage for all available AI models (Gemini, Claude, GPT, etc.)
+- **Multi-language support (i18n)** – Support both Japanese and English. Configuration available via settings.
 
 ### Status Bar Integration
 
 - Displays quota info directly in the VS Code status bar
+- **Detailed Tooltip** – Hover to see user info (name, email, plan) and last updated time
 - Visual indicators:
     - `$(check)` – Quota healthy (>20%)
     - `$(warning)` – Quota low (<20%)
@@ -69,6 +71,7 @@ Configure via VS Code Settings (`Ctrl+,`) under **AGQ**:
 | `agq.enabled`         | `true`  | Enable/disable quota monitoring             |
 | `agq.pollingInterval` | `120`   | Polling interval in seconds (min: 30s)      |
 | `agq.pinnedModels`    | `[]`    | Array of model IDs to display in status bar |
+| `agq.language`       | `"ja"`  | Language for UI and messages (`ja` or `en`) |
 
 ## Building from Source
 
