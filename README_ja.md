@@ -95,12 +95,6 @@ Bun をお使いの場合:
 bun run bun:vsix:package
 ```
 
-## アーキテクチャ
-
-Antigravity Quota は、以下のコンポーネントが連携して動作します。
-
-<img src="assets/architecture_jp.png" alt="システム構成図" width="700"/>
-
 ## 仕組み
 
 1. **プロセス検出 (`ProcessFinder`)** – 実行中の `Antigravity` 言語サーバープロセスをスキャンし、接続に必要なポート番号と CSRF トークンを自動的に抽出します。
