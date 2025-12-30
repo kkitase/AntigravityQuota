@@ -1,0 +1,12 @@
+{
+  "extension.displayName": "Antigravity Quota (AGQ)",
+  "extension.description": "VS Code extension for the Antigravity IDE to monitor the usage of the models",
+  "command.refresh": "AGQ: Refresh Now",
+  "command.reconnect": "AGQ: Reconnect",
+  "command.showLogs": "AGQ: Show Debug Log",
+  "config.enabled": "Enable auto monitoring",
+  "config.pollingInterval": "Polling interval in seconds (minimum: 30s, recommended: 120s+)",
+  "config.pinnedModels": "Model IDs to display in the status bar. If empty, shows 'AGQ'.",
+  "config.showPromptCredits": "Show prompt credits in the status bar.",
+  "config.language": "Display language for messages and UI (ja: Japanese, en: English)"
+}
