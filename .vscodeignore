@@ -1,2 +1,12 @@
-.env
+.vscode/**
+.github/**
+src/**
+docs/**
+note/**
+.agent/**
+tsconfig.json
+.vscodeignore
+.gitignore
+*.vsix
+release/**
 node_modules/**
