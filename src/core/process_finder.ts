@@ -6,8 +6,6 @@ import {exec} from 'child_process';
 import {promisify} from 'util';
 import * as https from 'https';
 import {WindowsStrategy, UnixStrategy, platform_strategy} from './platform_strategies';
-import * as process from 'process';
-import * as vscode from 'vscode';
 import {logger} from '../utils/logger';
 
 const exec_async = promisify(exec);

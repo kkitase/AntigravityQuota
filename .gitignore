@@ -1,4 +1,7 @@
 .env
-node_modules/**
-export/**
+node_modules/
+export/
 *.vsix
+.agent/
+.DS_Store
+README-TO-VSCODE.md

@@ -4,6 +4,7 @@
 
 import * as vscode from 'vscode';
 import {quota_snapshot, model_quota_info} from '../utils/types';
+import {localization} from '../utils/localization';
 
 /** Mapping of model labels to short abbreviations for status bar display */
 const MODEL_ABBREVIATIONS: Record<string, string> = {
@@ -66,12 +67,6 @@ export class StatusBarManager {
 		const pinned = this.get_pinned_models();
 		const parts: string[] = [];
 
-		/*if (show_credits && snapshot.prompt_credits) {
-			const pc = snapshot.prompt_credits;
-			const icon = pc.remaining_percentage > 20 ? '$(check)' : '$(warning)';
-			parts.push(`${icon} Credits: ${pc.available}/${pc.monthly}`);
-		}*/
-
 		// Filter models to only show pinned ones
 		const pinned_models = snapshot.models.filter(m => pinned.includes(m.model_id));
 
@@ -89,15 +84,19 @@ export class StatusBarManager {
 			this.item.text = parts.length > 0 ? parts.join('  ') : '$(rocket) AGQ';
 		}
 
+		// Build detailed tooltip
+		this.item.tooltip = this.build_tooltip(snapshot);
 		this.item.backgroundColor = undefined;
-		this.item.tooltip = 'Click to view Antigravity Quota details';
 		this.item.show();
 	}
 
 	show_menu() {
 		const pick = vscode.window.createQuickPick();
+		
+		// タイトルは常にAntigravity Quotaに設定
 		pick.title = 'Antigravity Quota';
-		pick.placeholder = 'Click a model to toggle its visibility in the status bar';
+		
+		pick.placeholder = localization.t('menu_placeholder');
 		pick.matchOnDescription = false;
 		pick.matchOnDetail = false;
 		pick.canSelectMany = false;
@@ -157,10 +156,43 @@ export class StatusBarManager {
 		const snapshot = this.last_snapshot;
 		const pinned = this.get_pinned_models();
 
-		items.push({label: 'Model Quotas', kind: vscode.QuickPickItemKind.Separator});
+		// モデル選択の説明を追加
+		items.push({
+			label: localization.t('menu_instruction'),
+			description: '',
+			kind: vscode.QuickPickItemKind.Separator
+		});
 
-		if (snapshot && snapshot.models.length > 0) {
-			for (const m of snapshot.models) {
+		// 区切り線を追加
+		items.push({
+			label: '─'.repeat(50),
+			kind: vscode.QuickPickItemKind.Separator
+		});
+
+		items.push({label: localization.t('menu_model_quotas'), kind: vscode.QuickPickItemKind.Separator});
+
+	if (snapshot && snapshot.models.length > 0) {
+		// モデルの順序定義
+		const model_order = [
+			'Gemini 3 Pro (High)',
+			'Gemini 3 Pro (Low)',
+			'Gemini 3 Flash',
+			'Claude Sonnet 4.5',
+			'Claude Sonnet 4.5 (Thinking)',
+			'Claude Opus 4.5 (Thinking)',
+			'GPT-OSS 120B (Medium)'
+		];
+		
+		// マップを作成
+		const model_map = new Map<string, typeof snapshot.models[0]>();
+		for (const m of snapshot.models) {
+			model_map.set(m.label, m);
+		}
+		
+		// 指定順序で追加
+		for (const label of model_order) {
+			const m = model_map.get(label);
+			if (m) {
 				const pct = m.remaining_percentage ?? 0;
 				const bar = this.draw_progress_bar(pct);
 				const is_pinned = pinned.includes(m.model_id);
@@ -173,17 +205,39 @@ export class StatusBarManager {
 				const item: vscode.QuickPickItem & {model_id?: string} = {
 					label: `${selection_icon} ${status_icon ? status_icon + ' ' : ''}${m.label}`,
 					description: `${bar} ${pct.toFixed(1)}%`,
-					detail: `    Resets in: ${m.time_until_reset_formatted}`,
+					detail: `    ${localization.t('resets_in')}: ${m.time_until_reset_formatted}`,
 				};
 
 				// Attach model_id for click handling
 				(item as any).model_id = m.model_id;
 				items.push(item);
 			}
-		} else {
+		}
+		
+		// 順序に含まれていないモデルも追加
+		for (const m of snapshot.models) {
+			if (!model_order.includes(m.label)) {
+				const pct = m.remaining_percentage ?? 0;
+				const bar = this.draw_progress_bar(pct);
+				const is_pinned = pinned.includes(m.model_id);
+
+				const selection_icon = is_pinned ? '$(check)' : '$(circle-outline)';
+				const status_icon = m.is_exhausted ? '$(error)' : pct < 20 ? '$(warning)' : '';
+
+				const item: vscode.QuickPickItem & {model_id?: string} = {
+					label: `${selection_icon} ${status_icon ? status_icon + ' ' : ''}${m.label}`,
+					description: `${bar} ${pct.toFixed(1)}%`,
+					detail: `    ${localization.t('resets_in')}: ${m.time_until_reset_formatted}`,
+				};
+
+				(item as any).model_id = m.model_id;
+				items.push(item);
+			}
+		}
+	} else {
 			items.push({
-				label: '$(info) No model data',
-				description: 'Waiting for quota info...',
+				label: `$(info) ${localization.t('menu_no_model_data')}`,
+				description: localization.t('menu_waiting_quota'),
 			});
 		}
 
@@ -208,6 +262,74 @@ export class StatusBarManager {
 		const filled = Math.round((percentage / 100) * total);
 		const empty = total - filled;
 		return '▓'.repeat(filled) + '░'.repeat(empty);
+	}
+
+	private build_tooltip(snapshot: quota_snapshot): string {
+		const lines: string[] = [];
+		
+		// ユーザー名
+		if (snapshot.user_name) {
+			lines.push(snapshot.user_name);
+		}
+		
+		// Email
+		if (snapshot.email) {
+			lines.push(snapshot.email);
+		}
+		
+		// プラン名
+		if (snapshot.plan_name) {
+			lines.push(`${localization.t('plan')}: ${snapshot.plan_name}`);
+		}
+		
+		// 最終更新時刻
+		const update_time = snapshot.timestamp.toLocaleString(localization.get_language() === 'ja' ? 'ja-JP' : 'en-US');
+		lines.push(`${localization.t('last_updated')}: ${update_time}`);
+		
+		// 区切り線を追加
+		if (lines.length > 0) {
+			lines.push('─'.repeat(30));
+		}
+		
+		// モデルの順序定義
+		const model_order = [
+			'Gemini 3 Pro (High)',
+			'Gemini 3 Pro (Low)',
+			'Gemini 3 Flash',
+			'Claude Sonnet 4.5',
+			'Claude Sonnet 4.5 (Thinking)',
+			'Claude Opus 4.5 (Thinking)',
+			'GPT-OSS 120B (Medium)'
+		];
+		
+		// 全モデルのクォータ情報を指定順序で表示
+		if (snapshot.models.length > 0) {
+			// マップを作成
+			const model_map = new Map<string, typeof snapshot.models[0]>();
+			for (const m of snapshot.models) {
+				model_map.set(m.label, m);
+			}
+			
+			// 指定順序で追加
+			for (const label of model_order) {
+				const m = model_map.get(label);
+				if (m) {
+					const pct = m.remaining_percentage !== undefined ? `${m.remaining_percentage.toFixed(1)}%` : 'N/A';
+					lines.push(`${m.label}: ${pct}`);
+				}
+			}
+			
+			// 順序に含まれていないモデルも追加
+			for (const m of snapshot.models) {
+				if (!model_order.includes(m.label)) {
+					const pct = m.remaining_percentage !== undefined ? `${m.remaining_percentage.toFixed(1)}%` : 'N/A';
+					lines.push(`${m.label}: ${pct}`);
+				}
+			}
+		}
+		lines.push(localization.t('click_to_configure'));
+		
+		return lines.join('\n');
 	}
 
 	dispose() {

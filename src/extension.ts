@@ -8,6 +8,7 @@ import {ProcessFinder} from './core/process_finder';
 import {QuotaManager} from './core/quota_manager';
 import {StatusBarManager} from './ui/status_bar';
 import {logger} from './utils/logger';
+import {localization} from './utils/localization';
 
 let config_manager: ConfigManager;
 let process_finder: ProcessFinder;
@@ -16,8 +17,8 @@ let status_bar: StatusBarManager;
 let is_initialized = false;
 
 export async function activate(context: vscode.ExtensionContext) {
-	logger.init(context);
-	logger.section('Extension', 'Antigravity Quota Activating');
+	logger.init(vscode.window.createOutputChannel('Antigravity Quota'));
+	logger.section('Extension', localization.t('extension_activating'));
 	logger.info('Extension', `VS Code Version: ${vscode.version}`);
 	logger.info('Extension', `Extension activating at: ${new Date().toISOString()}`);
 
@@ -34,8 +35,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	// Register Commands
 	context.subscriptions.push(
 		vscode.commands.registerCommand('agq.refresh', () => {
-			logger.info('Extension', 'Manual refresh triggered');
-			vscode.window.showInformationMessage('Refreshing Quota...');
+			logger.info('Extension', localization.t('manual_refresh'));
+			vscode.window.showInformationMessage(localization.t('refreshing_quota'));
 			quota_manager.fetch_quota();
 		})
 	);
@@ -50,19 +51,19 @@ export async function activate(context: vscode.ExtensionContext) {
 	// Manual activation command
 	context.subscriptions.push(
 		vscode.commands.registerCommand('agq.activate', async () => {
-			logger.info('Extension', 'Manual activation triggered');
+			logger.info('Extension', localization.t('manual_activation'));
 			if (!is_initialized) {
 				await initialize_extension();
 			} else {
-				vscode.window.showInformationMessage('AGQ is already active');
+				vscode.window.showInformationMessage(localization.t('already_active'));
 			}
 		})
 	);
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand('agq.reconnect', async () => {
-			logger.info('Extension', 'Reconnect triggered');
-			vscode.window.showInformationMessage('Reconnecting to Antigravity process...');
+			logger.info('Extension', localization.t('reconnect_triggered'));
+			vscode.window.showInformationMessage(localization.t('reconnecting'));
 			is_initialized = false;
 			quota_manager.stop_polling();
 			status_bar.show_loading();
@@ -74,7 +75,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand('agq.show_logs', () => {
 			logger.info('Extension', 'Opening debug log panel');
 			logger.show();
-			vscode.window.showInformationMessage('Debug log panel opened');
+			vscode.window.showInformationMessage(localization.t('logs_opened'));
 		})
 	);
 
@@ -146,18 +147,18 @@ async function initialize_extension() {
 				quota_manager.start_polling(config.polling_interval);
 			}
 			is_initialized = true;
-			logger.info('Extension', 'Initialization successful');
+			logger.info('Extension', localization.t('initialization_successful'));
 		} else {
-			logger.error('Extension', 'Antigravity process not found');
-			logger.info('Extension', 'Troubleshooting tips:');
-			logger.info('Extension', '   1. Make sure Antigravity extension is installed and enabled');
-			logger.info('Extension', '   2. Check if the language_server process is running');
-			logger.info('Extension', '   3. Try reloading VS Code');
-			logger.info('Extension', '   4. Open "Output" panel and select "Antigravity Quota" for detailed logs');
+			logger.error('Extension', localization.t('process_not_found'));
+			logger.info('Extension', localization.t('troubleshooting_title'));
+			logger.info('Extension', `   1. ${localization.t('troubleshooting_step1')}`);
+			logger.info('Extension', `   2. ${localization.t('troubleshooting_step2')}`);
+			logger.info('Extension', `   3. ${localization.t('troubleshooting_step3')}`);
+			logger.info('Extension', `   4. ${localization.t('troubleshooting_step4')}`);
 
-			status_bar.show_error('Antigravity process not found');
-			vscode.window.showErrorMessage('Could not find Antigravity process. Is it running? Use "AGQ: Show Debug Log" to see details.', 'Show Logs').then(action => {
-				if (action === 'Show Logs') {
+			status_bar.show_error(localization.t('status_bar_process_not_found'));
+			vscode.window.showErrorMessage(localization.t('error_dialog_process_not_found'), localization.t('show_logs_action')).then(action => {
+				if (action === localization.t('show_logs_action')) {
 					logger.show();
 				}
 			});
