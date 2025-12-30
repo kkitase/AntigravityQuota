@@ -108,6 +108,8 @@ export async function activate(context: vscode.ExtensionContext) {
 			logger.info('Extension', 'Config changed:', new_config);
 			if (new_config.enabled) {
 				quota_manager.start_polling(new_config.polling_interval);
+				// Immediately fetch to update UI (e.g. language change)
+				quota_manager.fetch_quota();
 			} else {
 				quota_manager.stop_polling();
 			}

@@ -89,7 +89,7 @@ export class QuotaManager {
 				metadata: {
 					ideName: 'antigravity',
 					extensionName: 'antigravity',
-					locale: 'en',
+					locale: localization.get_language(),
 				},
 			});
 

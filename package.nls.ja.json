@@ -8,5 +8,5 @@
   "config.pollingInterval": "ポーリング間隔（秒）。最小30秒、推奨120秒以上。",
   "config.pinnedModels": "ステータスバーに表示するモデル ID の一覧。空の場合は 'AGQ' と表示されます。",
   "config.showPromptCredits": "ステータスバーにプロンプトクレジットを表示する。",
-  "config.language": "メッセージと言語の表示設定 (ja: 日本語, en: 英語)"
+  "config.language": "拡張機能の UI に使用する言語。"
 }

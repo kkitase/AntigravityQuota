@@ -33,7 +33,7 @@
       }
     ],
     "configuration": {
-      "title": "AGQ",
+      "title": "Antigravity Quota",
       "properties": {
         "agq.enabled": {
           "type": "boolean",
