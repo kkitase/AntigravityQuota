@@ -8,5 +8,5 @@
   "config.pollingInterval": "Polling interval in seconds (minimum: 30s, recommended: 120s+)",
   "config.pinnedModels": "Model IDs to display in the status bar. If empty, shows 'AGQ'.",
   "config.showPromptCredits": "Show prompt credits in the status bar.",
-  "config.language": "Display language for messages and UI (ja: Japanese, en: English)"
+  "config.language": "Language to use for the extension UI."
 }
