@@ -5,3 +5,15 @@ export/
 .agent/
 .DS_Store
 README-TO-VSCODE.md
+
+# User specific directories
+docs/
+note/
+
+# OS/Editor specific files
+Thumbs.db
+*.swp
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
