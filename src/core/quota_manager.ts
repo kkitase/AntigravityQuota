@@ -4,6 +4,7 @@
 
 import * as https from 'https';
 import {quota_snapshot, model_quota_info, prompt_credits_info, server_user_status_response} from '../utils/types';
+import {localization} from '../utils/localization';
 
 export class QuotaManager {
 	private port: number = 0;
@@ -45,7 +46,7 @@ export class QuotaManager {
 					try {
 						resolve(JSON.parse(body) as T);
 					} catch {
-						reject(new Error('Invalid JSON response'));
+						reject(new Error(localization.t('json_parse_failed')));
 					}
 				});
 			});
@@ -53,7 +54,7 @@ export class QuotaManager {
 			req.on('error', reject);
 			req.on('timeout', () => {
 				req.destroy();
-				reject(new Error('Request timeout'));
+				reject(new Error(localization.t('request_timeout')));
 			});
 
 			req.write(data);
@@ -98,7 +99,7 @@ export class QuotaManager {
 				this.update_callback(snapshot);
 			}
 		} catch (error: any) {
-			console.error('Quota fetch error:', error.message);
+			console.error(localization.t('quota_fetch_error'), error.message);
 			if (this.error_callback) {
 				this.error_callback(error);
 			}
@@ -109,6 +110,11 @@ export class QuotaManager {
 		const user_status = data.userStatus;
 		const plan_info = user_status.planStatus?.planInfo;
 		const available_credits = user_status.planStatus?.availablePromptCredits;
+
+		// ユーザー名、email、プラン名を取得
+		const user_name = user_status.name;
+		const email = user_status.email;
+		const plan_name = plan_info?.planName;
 
 		let prompt_credits: prompt_credits_info | undefined;
 
@@ -147,28 +153,34 @@ export class QuotaManager {
 
 		return {
 			timestamp: new Date(),
+			user_name,
+			email,
+			plan_name,
 			prompt_credits,
 			models,
 		};
 	}
 
 	private format_time(ms: number, reset_time: Date): string {
-		if (ms <= 0) return 'Ready';
+		if (ms <= 0) return localization.t('ready');
 		const mins = Math.ceil(ms / 60000);
 		let duration = '';
 		if (mins < 60) {
-			duration = `${mins}m`;
+			duration = `${mins}${localization.t('minutes')}`;
 		} else {
 			const hours = Math.floor(mins / 60);
-			duration = `${hours}h ${mins % 60}m`;
+			duration = `${hours}${localization.t('hours')} ${mins % 60}${localization.t('minutes')}`;
 		}
 
-		const date_str = reset_time.toLocaleDateString(undefined, {
+		const lang = localization.get_language();
+		const date_option = lang === 'ja' ? 'ja-JP' : 'en-US';
+
+		const date_str = reset_time.toLocaleDateString(date_option, {
 			day: '2-digit',
 			month: '2-digit',
 			year: 'numeric',
 		});
-		const time_str = reset_time.toLocaleTimeString(undefined, {
+		const time_str = reset_time.toLocaleTimeString(date_option, {
 			hour: '2-digit',
 			minute: '2-digit',
 			hour12: false,

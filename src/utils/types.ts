@@ -36,6 +36,9 @@ export interface model_quota_info {
 
 export interface quota_snapshot {
 	timestamp: Date;
+	user_name?: string;
+	email?: string;
+	plan_name?: string;
 	prompt_credits?: prompt_credits_info;
 	models: model_quota_info[];
 }
@@ -53,6 +56,7 @@ export interface config_options {
 	enabled: boolean;
 	polling_interval: number;
 	show_prompt_credits?: boolean;
+	language?: 'ja' | 'en';
 }
 
 // Server Response Types (Must match external API, usually camelCase or snake_case depending on proto to JSON mapping)
