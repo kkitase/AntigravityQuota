@@ -1,4 +1,5 @@
 import {logger} from '../utils/logger';
+import {localization} from '../utils/localization';
 
 export interface platform_strategy {
 	get_process_list_command(process_name: string): string;
@@ -36,7 +37,7 @@ export class WindowsStrategy implements platform_strategy {
 			return true;
 		}
 
-		logger.debug('WindowsStrategy', `Process is NOT Antigravity`);
+		logger.debug('WindowsStrategy', localization.t('not_antigravity'));
 		return false;
 	}
 
@@ -60,7 +61,7 @@ export class WindowsStrategy implements platform_strategy {
 					logger.debug('WindowsStrategy', `JSON is an array with ${data.length} element(s)`);
 
 					if (data.length === 0) {
-						logger.warn('WindowsStrategy', `Empty process array - no language_server processes found`);
+						logger.warn('WindowsStrategy', localization.t('process_empty'));
 						return null;
 					}
 
@@ -104,7 +105,7 @@ export class WindowsStrategy implements platform_strategy {
 				const pid = data.ProcessId;
 
 				if (!pid) {
-					logger.error('WindowsStrategy', `No PID found in process data`);
+					logger.error('WindowsStrategy', localization.t('pid_not_found'));
 					return null;
 				}
 
@@ -227,11 +228,11 @@ export class WindowsStrategy implements platform_strategy {
 				? 'PowerShell command failed; please check system permissions'
 				: 'wmic/PowerShell command unavailable; please check the system environment',
 			requirements: [
-				'Antigravity is running',
-				'language_server_windows_x64.exe process is running',
+				localization.t('requirement_antigravity_running'),
+				localization.t('requirement_process_running'),
 				this.use_powershell
-					? 'The system has permission to run PowerShell commands (Get-CimInstance, Get-NetTCPConnection)'
-					: 'The system has permission to run wmic/PowerShell and netstat commands (auto-fallback supported)',
+					? localization.t('requirement_powershell_permission')
+					: localization.t('requirement_wmic_permission'),
 			],
 		};
 	}
@@ -243,6 +244,27 @@ export class UnixStrategy implements platform_strategy {
 		this.platform = platform;
 	}
 
+	/**
+	 * Determine if a command line belongs to an Antigravity process.
+	 * Checks for --app_data_dir antigravity parameter or antigravity in the path.
+	 */
+	private is_antigravity_process(command_line: string): boolean {
+		const lower_cmd = command_line.toLowerCase();
+
+		if (/--app_data_dir\s+antigravity\b/i.test(command_line)) {
+			logger.debug('UnixStrategy', `Process identified as Antigravity (--app_data_dir match)`);
+			return true;
+		}
+
+		if (lower_cmd.includes('/antigravity/')) {
+			logger.debug('UnixStrategy', `Process identified as Antigravity (path match)`);
+			return true;
+		}
+
+		logger.debug('UnixStrategy', localization.t('not_antigravity'));
+		return false;
+	}
+
 	get_process_list_command(process_name: string): string {
 		if (this.platform === 'darwin') {
 			return `pgrep -fl ${process_name}`;
@@ -251,24 +273,55 @@ export class UnixStrategy implements platform_strategy {
 	}
 
 	parse_process_info(stdout: string): {pid: number; extension_port: number; csrf_token: string} | null {
-		const lines = stdout.split('\n');
-		for (const line of lines) {
-			if (line.includes('--extension_server_port')) {
-				const parts = line.trim().split(/\s+/);
-				const pid = parseInt(parts[0], 10);
-				const cmd = line.substring(parts[0].length).trim();
+		logger.debug('UnixStrategy', `Parsing process info for ${this.platform}`);
+		const lines = stdout.split('\n').filter(line => line.trim().length > 0);
+		
+		logger.debug('UnixStrategy', `Found ${lines.length} process line(s)`);
 
-				const port_match = cmd.match(/--extension_server_port[=\s]+(\d+)/);
-				const token_match = cmd.match(/--csrf_token[=\s]+([a-zA-Z0-9\-]+)/);
+		const candidates: Array<{pid: number; extension_port: number; csrf_token: string}> = [];
 
-				return {
-					pid,
-					extension_port: port_match ? parseInt(port_match[1], 10) : 0,
-					csrf_token: token_match ? token_match[1] : '',
-				};
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i];
+			logger.debug('UnixStrategy', `Process ${i + 1}/${lines.length}: ${line.substring(0, 100)}...`);
+
+			if (!line.includes('--extension_server_port')) {
+				logger.debug('UnixStrategy', `  Skipped: No --extension_server_port parameter`);
+				continue;
 			}
+
+			const parts = line.trim().split(/\s+/);
+			const pid = parseInt(parts[0], 10);
+			const cmd = line.substring(parts[0].length).trim();
+
+			logger.debug('UnixStrategy', `  PID: ${pid}`);
+
+			if (!this.is_antigravity_process(cmd)) {
+				logger.debug('UnixStrategy', `  Skipped: Not an Antigravity process`);
+				continue;
+			}
+
+			const port_match = cmd.match(/--extension_server_port[=\s]+(\d+)/);
+			const token_match = cmd.match(/--csrf_token[=\s]+([a-zA-Z0-9\-]+)/);
+
+			if (!token_match || !token_match[1]) {
+				logger.debug('UnixStrategy', `  Skipped: No CSRF token found`);
+				continue;
+			}
+
+			const extension_port = port_match ? parseInt(port_match[1], 10) : 0;
+			const csrf_token = token_match[1];
+
+			logger.debug('UnixStrategy', `  Found candidate: PID=${pid}, extension_port=${extension_port}`);
+			candidates.push({pid, extension_port, csrf_token});
 		}
-		return null;
+
+		if (candidates.length === 0) {
+			logger.warn('UnixStrategy', `No Antigravity process found`);
+			return null;
+		}
+
+		logger.info('UnixStrategy', `Found ${candidates.length} Antigravity process(es), using PID: ${candidates[0].pid}`);
+		return candidates[0];
 	}
 
 	get_port_list_command(pid: number): string {

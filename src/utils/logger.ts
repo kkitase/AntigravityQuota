@@ -12,13 +12,8 @@ class Logger {
 	private log_level: LogLevel = LogLevel.DEBUG;
 	private prefix = '[AGQ]';
 
-	init(context?: vscode.ExtensionContext) {
-		if (!this.output_channel) {
-			this.output_channel = vscode.window.createOutputChannel('Antigravity Quota');
-			if (context) {
-				context.subscriptions.push(this.output_channel);
-			}
-		}
+	init(channel: vscode.OutputChannel) {
+		this.output_channel = channel;
 	}
 
 	set_level(level: LogLevel) {
@@ -36,13 +31,14 @@ class Logger {
 		const level_str = LogLevel[level].padEnd(5);
 		const formatted = `${timestamp} ${level_str} ${this.prefix}[${category}] ${message}`;
 
-		const console_method = level === LogLevel.ERROR ? console.error : level === LogLevel.WARN ? console.warn : console.log;
+		// Console output
 		if (args.length > 0) {
-			console_method(formatted, ...args);
+			console.log(formatted, ...args);
 		} else {
-			console_method(formatted);
+			console.log(formatted);
 		}
 
+		// Output channel output
 		if (this.output_channel) {
 			if (args.length > 0) {
 				const args_str = args
