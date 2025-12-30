@@ -342,7 +342,7 @@ export class StatusBarManager {
 				const m = model_map.get(label);
 				if (m) {
 					const pct = m.remaining_percentage !== undefined ? `${m.remaining_percentage.toFixed(0)}%` : 'N/A';
-					lines.push(`${m.label}: ${pct}`);
+					lines.push(`${m.label}: ${pct} -- ⏳ ${m.time_until_reset_formatted}`);
 				}
 			}
 			
@@ -350,7 +350,7 @@ export class StatusBarManager {
 			for (const m of snapshot.models) {
 				if (!model_order.includes(m.label)) {
 					const pct = m.remaining_percentage !== undefined ? `${m.remaining_percentage.toFixed(0)}%` : 'N/A';
-					lines.push(`${m.label}: ${pct}`);
+					lines.push(`${m.label}: ${pct} -- ⏳ ${m.time_until_reset_formatted}`);
 				}
 			}
 		}
