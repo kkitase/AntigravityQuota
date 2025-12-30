@@ -1,7 +1,7 @@
 {
   "name": "ag-quota",
-  "displayName": "Antigravity Quota (AGQ)",
-  "description": "VS Code extension for the Antigravity IDE to monitor the usage of the models",
+  "displayName": "%extension.displayName%",
+  "description": "%extension.description%",
   "version": "1.1.0",
   "publisher": "henrikdev",
   "icon": "assets/AntiGravityQuota.png",
@@ -13,26 +13,23 @@
   ],
   "activationEvents": [
     "onStartupFinished",
-    "onCommand:agq.refresh",
     "onCommand:agq.show_menu",
-    "onCommand:agq.activate",
-    "onCommand:agq.reconnect",
-    "onCommand:agq.show_logs"
+    "onCommand:agq.activate"
   ],
   "main": "./export/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "agq.refresh",
-        "title": "AGQ: Refresh Now"
+        "title": "%command.refresh%"
       },
       {
         "command": "agq.reconnect",
-        "title": "AGQ: Reconnect"
+        "title": "%command.reconnect%"
       },
       {
         "command": "agq.show_logs",
-        "title": "AGQ: Show Debug Log"
+        "title": "%command.showLogs%"
       }
     ],
     "configuration": {
@@ -41,14 +38,14 @@
         "agq.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable auto monitoring",
+          "description": "%config.enabled%",
           "order": 1
         },
         "agq.pollingInterval": {
           "type": "number",
           "default": 120,
           "minimum": 30,
-          "description": "Polling interval in seconds (minimum: 30s, recommended: 120s+)",
+          "description": "%config.pollingInterval%",
           "order": 2
         },
         "agq.pinnedModels": {
@@ -57,14 +54,24 @@
           "items": {
             "type": "string"
           },
-          "description": "Model IDs to display in the status bar. If empty, shows 'AGQ'.",
+          "description": "%config.pinnedModels%",
           "order": 3
         },
         "agq.showPromptCredits": {
           "type": "boolean",
           "default": false,
-          "description": "Show prompt credits in the status bar.",
+          "description": "%config.showPromptCredits%",
           "order": 4
+        },
+        "agq.language": {
+          "type": "string",
+          "enum": [
+            "ja",
+            "en"
+          ],
+          "default": "ja",
+          "description": "%config.language%",
+          "order": 5
         }
       }
     }

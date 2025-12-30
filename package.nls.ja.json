@@ -1,0 +1,12 @@
+{
+  "extension.displayName": "Antigravity Quota (AGQ)",
+  "extension.description": "Antigravity IDE 用のモデル利用状況監視拡張機能",
+  "command.refresh": "AGQ: 今すぐ更新",
+  "command.reconnect": "AGQ: 再接続",
+  "command.showLogs": "AGQ: デバッグログを表示",
+  "config.enabled": "自動監視を有効にする",
+  "config.pollingInterval": "ポーリング間隔（秒）。最小30秒、推奨120秒以上。",
+  "config.pinnedModels": "ステータスバーに表示するモデル ID の一覧。空の場合は 'AGQ' と表示されます。",
+  "config.showPromptCredits": "ステータスバーにプロンプトクレジットを表示する。",
+  "config.language": "メッセージと言語の表示設定 (ja: 日本語, en: 英語)"
+}
