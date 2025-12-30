@@ -113,14 +113,23 @@ export class StatusBarManager {
 
 		// Action the tracked item when user accepts (click/Enter)
 		pick.onDidAccept(async () => {
-			if (currentActiveItem && 'model_id' in currentActiveItem) {
-				await this.toggle_pinned_model((currentActiveItem as any).model_id);
-				// Refresh the menu items to reflect the change
-				pick.items = this.build_menu_items();
-				// Update status bar immediately if we have a snapshot
-				if (this.last_snapshot) {
-					const config = vscode.workspace.getConfiguration('agq');
-					this.update(this.last_snapshot, !!config.get('showPromptCredits'));
+			if (currentActiveItem) {
+				const item = currentActiveItem as any;
+				if (item.action === 'refresh') {
+					vscode.commands.executeCommand('agq.refresh');
+					pick.hide();
+				} else if (item.action === 'settings') {
+					vscode.commands.executeCommand('workbench.action.openSettings', '@ext:henrikdev.ag-quota');
+					pick.hide();
+				} else if (item.model_id) {
+					await this.toggle_pinned_model(item.model_id);
+					// Refresh the menu items to reflect the change
+					pick.items = this.build_menu_items();
+					// Update status bar immediately if we have a snapshot
+					if (this.last_snapshot) {
+						const config = vscode.workspace.getConfiguration('agq');
+						this.update(this.last_snapshot, !!config.get('showPromptCredits'));
+					}
 				}
 			}
 		});
@@ -155,6 +164,24 @@ export class StatusBarManager {
 		const items: vscode.QuickPickItem[] = [];
 		const snapshot = this.last_snapshot;
 		const pinned = this.get_pinned_models();
+
+		// Actions
+		const refreshItem: vscode.QuickPickItem & {action?: string} = {
+			label: localization.t('menu_refresh'),
+		};
+		refreshItem.action = 'refresh';
+		items.push(refreshItem);
+
+		const settingsItem: vscode.QuickPickItem & {action?: string} = {
+			label: localization.t('menu_open_settings'),
+		};
+		settingsItem.action = 'settings';
+		items.push(settingsItem);
+
+		items.push({
+			label: '',
+			kind: vscode.QuickPickItemKind.Separator
+		});
 
 		// モデル選択の説明を追加
 		items.push({

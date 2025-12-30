@@ -31,6 +31,8 @@ export interface LocalizationResources {
 	last_updated: string;
 	menu_instruction: string;
 	click_to_configure: string;
+	menu_refresh: string;
+	menu_open_settings: string;
 
 	// Extension
 	extension_activating: string;
@@ -86,6 +88,8 @@ const resources: Record<Language, LocalizationResources> = {
 		last_updated: "最終更新",
 		menu_instruction: "ステータスバーに表示するモデルを選択",
 		click_to_configure: "クリックしてモデル表示を設定",
+		menu_refresh: "$(sync) 今すぐ更新",
+		menu_open_settings: "$(gear) 設定を開く",
 
 		extension_activating: "Antigravity Quota を起動中",
 		manual_refresh: "手動更新が実行されました",
@@ -140,6 +144,8 @@ const resources: Record<Language, LocalizationResources> = {
 		last_updated: "Last updated",
 		menu_instruction: "Select models to display in status bar",
 		click_to_configure: "Click to configure model display",
+		menu_refresh: "$(sync) Refresh Now",
+		menu_open_settings: "$(gear) Open Settings",
 
 		extension_activating: "Antigravity Quota Activating",
 		manual_refresh: "Manual refresh triggered",
