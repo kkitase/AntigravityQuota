@@ -2,7 +2,7 @@
   "name": "ag-quota",
   "displayName": "%extension.displayName%",
   "description": "%extension.description%",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "publisher": "henrikdev",
   "icon": "assets/AntiGravityQuota.png",
   "engines": {
