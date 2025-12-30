@@ -66,10 +66,16 @@
         "agq.language": {
           "type": "string",
           "enum": [
-            "ja",
-            "en"
+            "auto",
+            "en",
+            "ja"
           ],
-          "default": "ja",
+          "enumDescriptions": [
+            "Auto (System Language)",
+            "English",
+            "Japanese"
+          ],
+          "default": "auto",
           "description": "%config.language%",
           "order": 5
         }

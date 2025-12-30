@@ -14,10 +14,14 @@ export class ConfigManager {
 	 */
 	get_config(): config_options {
 		const config = vscode.workspace.getConfiguration(this.config_key);
-		const lang = config.get<'ja' | 'en'>('language', 'ja');
+		let lang = config.get<'ja' | 'en' | 'auto'>('language', 'auto');
 		
-		// Apply language to localization service
-		localization.set_language(lang);
+		if (lang === 'auto') {
+			lang = vscode.env.language.startsWith('ja') ? 'ja' : 'en';
+		}
+		
+		// Apply language to localization service (types will be ja | en here)
+		localization.set_language(lang as 'ja' | 'en');
 
 		return {
 			enabled: config.get<boolean>('enabled', true),
