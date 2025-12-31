@@ -55,7 +55,6 @@ export type api_method_preference = 'COMMAND_MODEL_CONFIG' | 'GET_USER_STATUS';
 export interface config_options {
 	enabled: boolean;
 	polling_interval: number;
-	show_prompt_credits?: boolean;
 	language?: 'ja' | 'en';
 }
 

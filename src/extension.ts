@@ -87,12 +87,21 @@ export async function activate(context: vscode.ExtensionContext) {
 			prompt_credits: snapshot.prompt_credits,
 			timestamp: snapshot.timestamp,
 		});
-		status_bar.update(snapshot, current_config.show_prompt_credits ?? false);
+		status_bar.update(snapshot);
 	});
 
 	quota_manager.on_error(err => {
 		logger.error('Extension', `Quota error: ${err.message}`);
 		status_bar.show_error(err.message);
+	});
+
+	// 連続エラー時の自動再接続ハンドラ
+	quota_manager.on_reconnect_needed(async () => {
+		logger.warn('Extension', 'Auto-reconnect triggered due to consecutive errors');
+		is_initialized = false;
+		quota_manager.stop_polling();
+		status_bar.show_loading();
+		await initialize_extension();
 	});
 
 	// Initialize extension asynchronously (non-blocking)

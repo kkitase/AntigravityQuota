@@ -58,41 +58,46 @@ export class ProcessFinder {
 
 				logger.debug(LOG_CAT, `Raw stdout (${stdout.length} chars):\n${stdout}`);
 
-				const info = this.strategy.parse_process_info(stdout);
+				// 複数プロセス対応: 全候補を取得
+				const all_candidates = this.strategy.parse_all_process_info(stdout);
 
-				if (info) {
-					logger.info(LOG_CAT, `Process info parsed successfully:`, {
-						pid: info.pid,
-						extension_port: info.extension_port,
-						csrf_token: `${info.csrf_token.substring(0, 8)}...`,
-					});
+				if (all_candidates.length === 0) {
+					logger.warn(LOG_CAT, `No Antigravity processes found`);
+					continue;
+				}
 
-					logger.debug(LOG_CAT, `Getting listening ports for PID: ${info.pid}`);
+				logger.info(LOG_CAT, `Found ${all_candidates.length} Antigravity process candidate(s)`);
+
+				// 全候補に対して接続テストを実行
+				for (let j = 0; j < all_candidates.length; j++) {
+					const info = all_candidates[j];
+					logger.debug(LOG_CAT, `Testing candidate ${j + 1}/${all_candidates.length}: PID=${info.pid}`);
+
 					const ports = await this.get_listening_ports(info.pid);
 
-					logger.debug(LOG_CAT, `Found ${ports.length} listening port(s): [${ports.join(', ')}]`);
-
-					if (ports.length > 0) {
-						logger.debug(LOG_CAT, `Testing ports to find working endpoint...`);
-						const valid_port = await this.find_working_port(ports, info.csrf_token);
-
-						if (valid_port) {
-							logger.info(LOG_CAT, `SUCCESS: Valid port found: ${valid_port}`);
-							timer();
-							return {
-								extension_port: info.extension_port,
-								connect_port: valid_port,
-								csrf_token: info.csrf_token,
-							};
-						} else {
-							logger.warn(LOG_CAT, `No ports responded successfully to health check`);
-						}
-					} else {
-						logger.warn(LOG_CAT, `No listening ports found for PID ${info.pid}`);
+					if (ports.length === 0) {
+						logger.debug(LOG_CAT, `Candidate ${j + 1}: No listening ports, skipping`);
+						continue;
 					}
-				} else {
-					logger.warn(LOG_CAT, `Failed to parse process info from command output`);
+
+					logger.debug(LOG_CAT, `Candidate ${j + 1}: Found ${ports.length} port(s): [${ports.join(', ')}]`);
+
+					const valid_port = await this.find_working_port(ports, info.csrf_token);
+
+					if (valid_port) {
+						logger.info(LOG_CAT, `SUCCESS: Candidate ${j + 1} (PID=${info.pid}) responded on port ${valid_port}`);
+						timer();
+						return {
+							extension_port: info.extension_port,
+							connect_port: valid_port,
+							csrf_token: info.csrf_token,
+						};
+					} else {
+						logger.debug(LOG_CAT, `Candidate ${j + 1}: No working port found, trying next`);
+					}
 				}
+
+				logger.warn(LOG_CAT, `All ${all_candidates.length} candidates failed connection test`);
 			} catch (e: any) {
 				logger.error(LOG_CAT, `Attempt ${i + 1} failed with error:`, {
 					message: e.message,

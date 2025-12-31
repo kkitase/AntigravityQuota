@@ -26,7 +26,6 @@ export class ConfigManager {
 		return {
 			enabled: config.get<boolean>('enabled', true),
 			polling_interval: Math.max(30, config.get<number>('pollingInterval', 120)) * 1000,
-			show_prompt_credits: config.get<boolean>('showPromptCredits', false),
 			language: lang,
 		};
 	}
