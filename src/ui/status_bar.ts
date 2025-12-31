@@ -61,7 +61,7 @@ export class StatusBarManager {
 		this.item.show();
 	}
 
-	update(snapshot: quota_snapshot, show_credits: boolean) {
+	update(snapshot: quota_snapshot) {
 		this.last_snapshot = snapshot;
 
 		const pinned = this.get_pinned_models();
@@ -70,7 +70,7 @@ export class StatusBarManager {
 		// Filter models to only show pinned ones
 		const pinned_models = snapshot.models.filter(m => pinned.includes(m.model_id));
 
-		if (pinned_models.length === 0 && !show_credits) {
+		if (pinned_models.length === 0) {
 			// Show default text if nothing is pinned
 			this.item.text = '$(rocket) AGQ';
 		} else {
@@ -127,8 +127,7 @@ export class StatusBarManager {
 					pick.items = this.build_menu_items();
 					// Update status bar immediately if we have a snapshot
 					if (this.last_snapshot) {
-						const config = vscode.workspace.getConfiguration('agq');
-						this.update(this.last_snapshot, !!config.get('showPromptCredits'));
+						this.update(this.last_snapshot);
 					}
 				}
 			}
@@ -342,7 +341,7 @@ export class StatusBarManager {
 				const m = model_map.get(label);
 				if (m) {
 					const pct = m.remaining_percentage !== undefined ? `${m.remaining_percentage.toFixed(0)}%` : 'N/A';
-					lines.push(`${m.label}: ${pct} -- ⏳ ${m.time_until_reset_formatted}`);
+					lines.push(`${m.label}: ${pct} ⌛ ${m.time_until_reset_formatted}`);
 				}
 			}
 			
@@ -350,7 +349,7 @@ export class StatusBarManager {
 			for (const m of snapshot.models) {
 				if (!model_order.includes(m.label)) {
 					const pct = m.remaining_percentage !== undefined ? `${m.remaining_percentage.toFixed(0)}%` : 'N/A';
-					lines.push(`${m.label}: ${pct} -- ⏳ ${m.time_until_reset_formatted}`);
+					lines.push(`${m.label}: ${pct} ⌛ ${m.time_until_reset_formatted}`);
 				}
 			}
 		}

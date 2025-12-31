@@ -12,13 +12,21 @@ export class QuotaManager {
 
 	private update_callback?: (snapshot: quota_snapshot) => void;
 	private error_callback?: (error: Error) => void;
+	private reconnect_callback?: () => void;
 	private polling_timer?: NodeJS.Timeout;
+
+	// 連続エラーカウンター（再接続トリガー用）
+	private consecutive_error_count: number = 0;
+	private static readonly MAX_CONSECUTIVE_ERRORS = 3;
+	private static readonly MAX_REQUEST_RETRIES = 2;
 
 	constructor() {}
 
 	init(port: number, csrf_token: string) {
 		this.port = port;
 		this.csrf_token = csrf_token;
+		// 接続成功時にエラーカウンターをリセット
+		this.consecutive_error_count = 0;
 	}
 
 	private request<T>(path: string, body: object): Promise<T> {
@@ -70,6 +78,11 @@ export class QuotaManager {
 		this.error_callback = callback;
 	}
 
+	/** 再接続が必要になった場合に呼ばれるコールバックを設定 */
+	on_reconnect_needed(callback: () => void) {
+		this.reconnect_callback = callback;
+	}
+
 	start_polling(interval_ms: number) {
 		this.stop_polling();
 		this.fetch_quota();
@@ -84,24 +97,52 @@ export class QuotaManager {
 	}
 
 	async fetch_quota() {
-		try {
-			const data = await this.request<server_user_status_response>('/exa.language_server_pb.LanguageServerService/GetUserStatus', {
-				metadata: {
-					ideName: 'antigravity',
-					extensionName: 'antigravity',
-					locale: localization.get_language(),
-				},
-			});
+		let last_error: Error | null = null;
 
-			const snapshot = this.parse_response(data);
+		// リトライ処理
+		for (let attempt = 0; attempt < QuotaManager.MAX_REQUEST_RETRIES; attempt++) {
+			try {
+				const data = await this.request<server_user_status_response>('/exa.language_server_pb.LanguageServerService/GetUserStatus', {
+					metadata: {
+						ideName: 'antigravity',
+						extensionName: 'antigravity',
+						locale: localization.get_language(),
+					},
+				});
 
-			if (this.update_callback) {
-				this.update_callback(snapshot);
+				const snapshot = this.parse_response(data);
+
+				// 成功時にエラーカウンターをリセット
+				this.consecutive_error_count = 0;
+
+				if (this.update_callback) {
+					this.update_callback(snapshot);
+				}
+				return;
+			} catch (error: any) {
+				last_error = error;
+				console.error(localization.t('quota_fetch_error'), `Attempt ${attempt + 1}: ${error.message}`);
+
+				// リトライ前に少し待機
+				if (attempt < QuotaManager.MAX_REQUEST_RETRIES - 1) {
+					await new Promise(r => setTimeout(r, 500));
+				}
 			}
-		} catch (error: any) {
-			console.error(localization.t('quota_fetch_error'), error.message);
-			if (this.error_callback) {
-				this.error_callback(error);
+		}
+
+		// 全リトライ失敗
+		this.consecutive_error_count++;
+
+		if (this.error_callback && last_error) {
+			this.error_callback(last_error);
+		}
+
+		// 連続エラーが閾値を超えた場合、再接続をトリガー
+		if (this.consecutive_error_count >= QuotaManager.MAX_CONSECUTIVE_ERRORS) {
+			console.error(`Consecutive errors reached ${this.consecutive_error_count}, triggering reconnect`);
+			this.consecutive_error_count = 0; // リセットして再接続を待つ
+			if (this.reconnect_callback) {
+				this.reconnect_callback();
 			}
 		}
 	}

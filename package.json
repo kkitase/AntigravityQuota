@@ -57,12 +57,6 @@
           "description": "%config.pinnedModels%",
           "order": 3
         },
-        "agq.showPromptCredits": {
-          "type": "boolean",
-          "default": false,
-          "description": "%config.showPromptCredits%",
-          "order": 4
-        },
         "agq.language": {
           "type": "string",
           "enum": [
@@ -77,7 +71,7 @@
           ],
           "default": "auto",
           "description": "%config.language%",
-          "order": 5
+          "order": 4
         }
       }
     }
